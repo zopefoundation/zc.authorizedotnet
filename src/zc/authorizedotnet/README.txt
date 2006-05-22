@@ -17,7 +17,7 @@ Several terms used in this document:
     - voiding: canceling a previous transaction
 
 Settlement is performed in daily batches.  The cut-off time for which is
-specified in the merchant's settings avialable on the Authorize.Net merchant
+specified in the merchant's settings available on the Authorize.Net merchant
 interface.
 
 There are many other settings which can be configured via the merchant
@@ -35,7 +35,7 @@ foundation for future work.  We consider it "alpha" quality.
 Transaction Keys
 ----------------
 
-Each AIM transaction must be accomponied by a merchant login and a
+Each AIM transaction must be accompanied by a merchant login and a
 "transaction key".  This key is obtained from the merchant interface.  After
 importing the CcProcessor class you must pass it your login and transaction
 key:
@@ -64,7 +64,7 @@ The result object contains details about the transaction.
     >>> result.trans_id
     '123456789'
 
-The server succesfully processed the transaction:
+The server successfully processed the transaction:
 
     >>> transactions = server.getTransactions()
     >>> transactions[result.trans_id]
