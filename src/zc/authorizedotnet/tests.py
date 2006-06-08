@@ -16,9 +16,11 @@ from BeautifulSoup import BeautifulSoup
 from zope.testbrowser.browser import Browser
 from zope.testing import doctest, renormalizing
 import BaseHTTPServer
+import ClientForm
 import SimpleHTTPServer
 import cgi
 import httplib
+import mechanize
 import os
 import re
 import threading
@@ -26,27 +28,44 @@ import unittest
 
 TEST_SERVER_PORT = 30423
 
+class TolerantFormParser(ClientForm.FormParser):
+    """A parser that ignores <input> elements outside of forms."""
+
+    def do_input(self, attrs):
+        if self._current_form is None:
+            return
+        return ClientForm.FormParser.do_input(self, attrs)
+
+
 class ScrapedMerchantUiServer(object):
     initialized = False
 
     def __init__(self, server, login, password):
+        mech_browser = mechanize.Browser(
+            forms_factory=mechanize.FormsFactory(
+                form_parser_class=TolerantFormParser))
+
         login_page = 'https://%s/ui/themes/anet/merch.app' % server
-        self.browser = Browser()
+        self.browser = Browser(mech_browser=mech_browser)
         self.browser.open(login_page)
         self.browser.getControl(name='MerchantLogin').value = login
         self.browser.getControl(name='Password').value = password
         self.browser.getControl('Log In').click()
 
+        # We have to skip a stupid nag screen.
+        self.browser.getControl('Skip').click()
+
     def getTransactions(self):
         self.browser.getLink('Unsettled Transactions').click()
         soup = BeautifulSoup(self.browser.contents)
         transactions = {}
-        for row in soup('tr', ['TblRowFont', 'TblRowFontWithBGColor']):
+        for row in soup('tr', ['SearchLineItemRow1', 'SearchLineItemRow2']):
             cells = row('td')
             if len(cells) == 8:
                 txn_id = cells[0].contents[0].contents[0]
                 txn_status = cells[2].contents[0]
                 transactions[txn_id] = txn_status
+        self.browser.goBack()
 
         return transactions
 
