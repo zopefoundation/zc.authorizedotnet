@@ -37,14 +37,32 @@ class TolerantFormParser(ClientForm.FormParser):
         return ClientForm.FormParser.do_input(self, attrs)
 
 
-class ScrapedMerchantUiServer(object):
-    initialized = False
+def makeMechBrowser():
+    """Create a mechanize browser
 
-    def __init__(self, server, login, password):
+    This tries to paper over two different mechanize APIs, the newest is
+    listed first.
+    """
+    if hasattr(mechanize, 'DefaultFactory'):
+        class MyFactory(mechanize.DefaultFactory):
+            def __init__(self):
+                mechanize.DefaultFactory.__init__(self)
+                self._forms_factory=mechanize.FormsFactory(
+                    form_parser_class=TolerantFormParser)
+
+        mech_browser = mechanize.Browser(factory=MyFactory())
+    else:
         mech_browser = mechanize.Browser(
             forms_factory=mechanize.FormsFactory(
                 form_parser_class=TolerantFormParser))
 
+    return mech_browser
+
+class ScrapedMerchantUiServer(object):
+    initialized = False
+
+    def __init__(self, server, login, password):
+        mech_browser = makeMechBrowser()
         login_page = 'https://%s/ui/themes/anet/merch.app' % server
         self.browser = Browser(mech_browser=mech_browser)
         self.browser.open(login_page)
