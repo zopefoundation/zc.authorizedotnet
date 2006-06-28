@@ -228,11 +228,12 @@ class TestHttpServer(BaseHTTPServer.HTTPServer):
             self.handle_request()
 
 
-http_server = TestHttpServer(('localhost', TEST_SERVER_PORT),
-                             TestRequestHandler)
 in_process_server = InProcessServer()
 
 def localSetUp(test):
+    global http_server
+    http_server = TestHttpServer(('localhost', TEST_SERVER_PORT),
+                                 TestRequestHandler)
     http_server.thread = threading.Thread(target=http_server.serve_forever)
     http_server.thread.start()
     test.globs['LOGIN'] = 'LOGIN'
