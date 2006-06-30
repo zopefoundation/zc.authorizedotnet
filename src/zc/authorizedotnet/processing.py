@@ -31,7 +31,7 @@ class TransactionResult(object):
 
     def validateHash(self, login, salt):
         value = ''.join([salt, login, self.trans_id, self.amount])
-        return self.hash == md5.new(value).hexdigest()
+        return self.hash.upper() == md5.new(value).hexdigest().upper()
 
 
 class AuthorizeNetConnection(object):
