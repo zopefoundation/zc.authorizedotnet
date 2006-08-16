@@ -110,7 +110,7 @@ The server shows that the transaction was voided:
 Transaction Errors
 ------------------
 
-If something about the transaction is erronious, the transaction results
+If something about the transaction is erroneous, the transaction results
 indicate so.
 
     >>> result = cc.authorize(amount='2.00', card_num='4007000000027',
@@ -133,7 +133,7 @@ Address Verification System (AVS)
 AVS is used to assert that the billing information provided for a transaction
 must match (to some degree or another) the cardholder's actual billing data.
 The gateway can be configured to disallow transactions that don't meet certain
-AVS critieria.
+AVS criteria.
 
 
     >>> result = cc.authorize(amount='27.00', card_num='4222222222222',
@@ -150,7 +150,7 @@ Duplicate Window
 
 The gateway provides a way to detect and reject duplicate transactions within
 a certain time window.  Any transaction with the same CC information (card
-number and exproation date) and amount duplicated within the window will be
+number and expiration date) and amount duplicated within the window will be
 rejected.
 
 The first transaction will work.
@@ -191,6 +191,7 @@ the duplicate window.
     >>> cc.void(trans_id=result.trans_id).response
     'approved'
 
+
 The MD5 Hash Security Feature
 -----------------------------
 
@@ -201,10 +202,10 @@ fields provided and submit the form.  You may then provide the ``salt``
 parameter to the CcProcessor constructor to enable response validation.
 
 WARNING: The format of the "amount" field is very important for this feature
-to work correctly.  The field must be formatted in the "cononical" way for the
+to work correctly.  The field must be formatted in the "canonical" way for the
 currency in use.  For the US dollar that means no leading zeros and two (and
 only two) decimal places.  If the amount is not formatted properly in the
-request the hashes will not match and the transaction will raise an exception.
+request, the hashes will not match and the transaction will raise an exception.
 
 If you want to enable hash checking, provide a ``salt`` value to the
 ``CcProcessor`` constructor.  If an incorrect salt value is used, or the
