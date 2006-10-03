@@ -12,18 +12,75 @@
 #
 ##############################################################################
 
-from M2Crypto import httpslib
+import socket
+import httplib
+from M2Crypto import httpslib, SSL
 import urllib
 import md5
 
+class HTTPSConnection(httpslib.HTTPSConnection):
+    # why do we use the HTTPS connection in the MCrypto2 httpslib module
+    # rather than the one in the standard library's httplib module?  Answer
+    # (gathered from Benji): the version in MCrypto2 verifies certificates,
+    # while the one in the standard library does not.
+
+    def __init__(self, host, port=None, strict=None, timeout=None):
+        # timeout is None or float
+        self.timeout = timeout
+        httpslib.HTTPSConnection.__init__(self, host, port, strict)
+
+    def connect(self):
+        self.sock = SSL.Connection(self.ssl_ctx)
+        self.sock.socket.settimeout(self.timeout)
+        self.sock.connect((self.host, self.port))
+
+
+class HTTPConnection(httplib.HTTPConnection):
+
+    def __init__(self, host, port=None, strict=None, timeout=None):
+        # timeout is None or float
+        self.timeout = timeout
+        httplib.HTTPConnection.__init__(self, host, port, strict)
+
+    def connect(self):
+        """Connect to the host and port specified in __init__."""
+        # !!! This is a copy of the method from the standard library except for
+        # one line marked as "!!!" below
+        msg = "getaddrinfo returns an empty list"
+        for res in socket.getaddrinfo(self.host, self.port, 0,
+                                      socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self.sock = socket.socket(af, socktype, proto)
+                self.sock.settimeout(self.timeout) # !!!
+                if self.debuglevel > 0:
+                    print "connect: (%s, %s)" % (self.host, self.port)
+                self.sock.connect(sa)
+            except socket.error, msg:
+                if self.debuglevel > 0:
+                    print 'connect fail:', (self.host, self.port)
+                if self.sock:
+                    self.sock.close()
+                self.sock = None
+                continue
+            break
+        if not self.sock:
+            raise socket.error, msg
+
+
 class TransactionResult(object):
     def __init__(self, fields):
-        response_code_map = {'1': 'approved', '2': 'declined', '3': 'error'}
-        self.response = response_code_map[fields[0]]
+        self.response_code = fields[0]
+        self.response = {'1': 'approved', '2': 'declined', '3': 'error',
+                         '4': 'held for review'}[self.response_code]
+        self.response_reason_code = fields[2]
         self.response_reason = fields[3]
         TESTING_PREFIX = '(TESTMODE) '
         if self.response_reason.startswith(TESTING_PREFIX):
+            self.test = True
             self.response_reason = self.response_reason[len(TESTING_PREFIX):]
+        else:
+            self.test = False
         self.approval_code = fields[4]
         self.trans_id = fields[6]
         self.amount = fields[9]
@@ -35,10 +92,11 @@ class TransactionResult(object):
 
 
 class AuthorizeNetConnection(object):
-    def __init__(self, server, login, key, salt=None):
+    def __init__(self, server, login, key, salt=None, timeout=None):
         self.server = server
         self.login = login
         self.salt = salt
+        self.timeout = timeout
         self.delimiter = '|'
         self.standard_fields = dict(
             x_login = login,
@@ -62,9 +120,9 @@ class AuthorizeNetConnection(object):
 
         if self.server.startswith('localhost:'):
             server, port = self.server.split(':')
-            conn = httpslib.HTTPConnection(server, port)
+            conn = HTTPConnection(server, port, timeout=self.timeout)
         else:
-            conn = httpslib.HTTPSConnection(self.server)
+            conn = HTTPSConnection(self.server, timeout=self.timeout)
         conn.putrequest('POST', '/gateway/transact.dll')
         conn.putheader('content-type', 'application/x-www-form-urlencoded')
         conn.putheader('content-length', len(body))
@@ -84,8 +142,9 @@ class AuthorizeNetConnection(object):
 
 
 class CcProcessor(object):
-    def __init__(self, server, login, key, salt=None):
-        self.connection = AuthorizeNetConnection(server, login, key, salt)
+    def __init__(self, server, login, key, salt=None, timeout=None):
+        self.connection = AuthorizeNetConnection(
+            server, login, key, salt, timeout)
 
     def authorize(self, **kws):
         if not isinstance(kws['amount'], basestring):
