@@ -212,8 +212,8 @@ If you want to enable hash checking, provide a ``salt`` value to the
 hash given in the transaction doesn't match the true hash value an exception
 is raised.
 
-    >>> cc = CcProcessor(server='test.authorize.net', login='cnpdev3137',
-    ...                  key='BLRGz8xUKRafHh1A', salt='wrong')
+    >>> cc = CcProcessor(server=SERVER_NAME, login=LOGIN, key=KEY,
+    ...                  salt='wrong')
     >>> result = cc.authorize(amount='10.00', card_num='4007000000027',
     ...                       exp_date='0530')
     Traceback (most recent call last):
