@@ -293,7 +293,9 @@ def test_suite():
             setUp = localSetUp,
             tearDown = localTearDown,
             )
-    return unittest.TestSuite((remote, local))
+    unit = doctest.DocTestSuite('zc.authorizedotnet.processing',
+                                optionflags=doctest.ELLIPSIS)
+    return unittest.TestSuite((remote, local, unit))
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')

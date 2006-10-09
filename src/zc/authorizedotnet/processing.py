@@ -12,13 +12,43 @@
 #
 ##############################################################################
 
-import socket
-import httplib
 from M2Crypto import httpslib, SSL
 import urllib
 import md5
 
 class HTTPSConnection(httpslib.HTTPSConnection):
+    """HTTPS connection with a timeout
+
+    We'll need a connection stub:
+
+        >>> class StubConnection(object):
+        ...     def set_socket_read_timeout(self, tm):
+        ...          print 'Read timeout set to %d seconds, %d microseconds' % (tm.sec, tm.microsec)
+        ...     def set_socket_write_timeout(self, tm):
+        ...          print 'Write timeout set to %d seconds, %d microseconds' % (tm.sec, tm.microsec)
+        ...     def connect(self, address):
+        ...          print 'Connecting to %s' % (address, )
+
+    Now, let's create a HTTPS connection with this stub SSL connection:
+
+        >>> conn = HTTPSConnection('localhost')
+        >>> conn._createConnection = lambda: StubConnection()
+
+        >>> conn.connect()
+        Connecting to ('localhost', 443)
+
+    If the timeout keyword attribute is provided, it is passed to the
+    SSL connection:
+
+        >>> conn = HTTPSConnection('localhost', timeout=4.5)
+        >>> conn._createConnection = lambda: StubConnection()
+
+        >>> conn.connect()
+        Read timeout set to 4 seconds, 500000000 microseconds
+        Write timeout set to 4 seconds, 500000000 microseconds
+        Connecting to ('localhost', 443)
+
+    """
     # why do we use the HTTPS connection in the MCrypto2 httpslib module
     # rather than the one in the standard library's httplib module?  Answer
     # (gathered from Benji): the version in MCrypto2 verifies certificates,
@@ -29,43 +59,42 @@ class HTTPSConnection(httpslib.HTTPSConnection):
         self.timeout = timeout
         httpslib.HTTPSConnection.__init__(self, host, port, strict)
 
+    def _createConnection(self):
+        return SSL.Connection(self.ssl_ctx)
+
+    def _getTimeout(self, timeout):
+        """Create an SSL.timeout object out of a float of seconds
+
+            >>> conn = HTTPSConnection('localhost')
+            >>> tm = conn._getTimeout(1.85)
+            >>> tm
+            <M2Crypto.SSL.timeout.timeout instance at ...>
+            >>> tm.sec
+            1
+            >>> tm.microsec
+            850000000
+
+            >>> tm = conn._getTimeout(2.1)
+            >>> tm.sec
+            2
+            >>> tm.microsec
+            100000000
+
+        """
+        seconds = int(timeout)
+        useconds = int((timeout - seconds) * 10 ** 9)
+        return SSL.timeout(seconds, useconds)
+
     def connect(self):
-        self.sock = SSL.Connection(self.ssl_ctx)
-        self.sock.socket.settimeout(self.timeout)
+        self.sock = self._createConnection()
+
+        if self.timeout:
+            timeout = self._getTimeout(self.timeout)
+            self.sock.set_socket_read_timeout(timeout)
+            self.sock.set_socket_write_timeout(timeout)
+            self.sock.blocking = True
+
         self.sock.connect((self.host, self.port))
-
-
-class HTTPConnection(httplib.HTTPConnection):
-
-    def __init__(self, host, port=None, strict=None, timeout=None):
-        # timeout is None or float
-        self.timeout = timeout
-        httplib.HTTPConnection.__init__(self, host, port, strict)
-
-    def connect(self):
-        """Connect to the host and port specified in __init__."""
-        # !!! This is a copy of the method from the standard library except for
-        # one line marked as "!!!" below
-        msg = "getaddrinfo returns an empty list"
-        for res in socket.getaddrinfo(self.host, self.port, 0,
-                                      socket.SOCK_STREAM):
-            af, socktype, proto, canonname, sa = res
-            try:
-                self.sock = socket.socket(af, socktype, proto)
-                self.sock.settimeout(self.timeout) # !!!
-                if self.debuglevel > 0:
-                    print "connect: (%s, %s)" % (self.host, self.port)
-                self.sock.connect(sa)
-            except socket.error, msg:
-                if self.debuglevel > 0:
-                    print 'connect fail:', (self.host, self.port)
-                if self.sock:
-                    self.sock.close()
-                self.sock = None
-                continue
-            break
-        if not self.sock:
-            raise socket.error, msg
 
 
 class TransactionResult(object):
@@ -120,7 +149,7 @@ class AuthorizeNetConnection(object):
 
         if self.server.startswith('localhost:'):
             server, port = self.server.split(':')
-            conn = HTTPConnection(server, port, timeout=self.timeout)
+            conn = httpslib.HTTPConnection(server, port)
         else:
             conn = HTTPSConnection(self.server, timeout=self.timeout)
         conn.putrequest('POST', '/gateway/transact.dll')
