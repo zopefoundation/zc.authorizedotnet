@@ -237,3 +237,9 @@ TODO
 ----
 
  - explain and demonstrate duplicate transaction window
+
+NOTES
+-----
+
+M2Crypto 0.16 appears to have issues on some platforms such as Centos.
+Reverting to version 0.15 has alleviated them in some cases.
