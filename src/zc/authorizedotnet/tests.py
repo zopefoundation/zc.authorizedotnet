@@ -267,7 +267,7 @@ def remoteTearDown(test):
 
 def test_suite():
     checker = renormalizing.RENormalizing([
-        (re.compile(r"'\d{6}'"), "'123456'"), # for approval codes
+        (re.compile(r"'.{6}'"), "'123456'"), # for approval codes
         (re.compile(r"'\d{9}'"), "'123456789'"), # for transaction IDs
         ])
 
