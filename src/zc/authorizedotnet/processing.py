@@ -186,6 +186,10 @@ class CcProcessor(object):
         type = 'PRIOR_AUTH_CAPTURE'
         return self.connection.sendTransaction(type=type, **kws)
 
+    def credit(self, **kws):
+        type = 'CREDIT'
+        return self.connection.sendTransaction(type=type, **kws)
+
     def void(self, **kws):
         type = 'VOID'
         return self.connection.sendTransaction(type=type, **kws)

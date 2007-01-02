@@ -176,6 +176,17 @@ class TestRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         return out
 
+    def CREDIT(self, fields):
+        trans_id = fields.getvalue('x_trans_id')
+
+        response_code = '3'
+        reason_text = 'The referenced transaction does not meet the criteria for issuing a credit.'
+        approval_code = '123456'
+        out = self.makeOut(response_code, reason_text, approval_code,
+                           trans_id, amount='')
+        in_process_server.info[trans_id] = 'XXX'
+        return out
+
     def VOID(self, fields):
         trans_id = fields.getvalue('x_trans_id')
 
@@ -245,6 +256,7 @@ def localTearDown(test):
     conn.getresponse()
     http_server.thread.join()
 
+
 def remoteSetUp(test):
     login = os.environ.get('AUTHORIZE_DOT_NET_LOGIN')
     password = os.environ.get('AUTHORIZE_DOT_NET_PASSWORD')
@@ -261,6 +273,8 @@ def remoteSetUp(test):
                                                    password)
     test.globs['LOGIN'] = login
     test.globs['KEY'] = key
+
+
 
 def remoteTearDown(test):
     test.globs['server'].close()
@@ -295,7 +309,7 @@ def test_suite():
             )
     unit = doctest.DocTestSuite('zc.authorizedotnet.processing',
                                 optionflags=doctest.ELLIPSIS)
-    return unittest.TestSuite((remote, local, unit))
+    return unittest.TestSuite((local, remote, unit))
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')

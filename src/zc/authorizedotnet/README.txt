@@ -50,7 +50,7 @@ Authorizing
 To authorize a charge use the ``authorize`` method.  It returns a
 ``Transaction`` object.
 
-    >>> result = cc.authorize(amount='1.00', card_num='4007000000027',
+    >>> result = cc.authorize(amount='2.00', card_num='4007000000027',
     ...                       exp_date='0530')
 
 The result object contains details about the transaction.
@@ -61,6 +61,7 @@ The result object contains details about the transaction.
     'This transaction has been approved.'
     >>> result.approval_code
     '123456'
+    >>> auth_trans_id = result.trans_id
     >>> result.trans_id
     '123456789'
 
@@ -82,28 +83,50 @@ can do so.
     'approved'
 
 The server shows that the transaction has been captured and is awaiting
-setttlement:
+settlement:
 
     >>> transactions = server.getTransactions()
     >>> transactions[result.trans_id]
     'Captured/Pending Settlement'
 
 
+Credit (refund) transactions
+----------------------------
+
+A previosly credited transaction can be refunded.  The amount of the
+refund cannot exceed the amount captured.  At least the last four
+digits of the credit card number must be provided, along with the
+transaction id.
+
+Credit will only work when the transaction has been settled by the
+banks, that is if we try refunding immediately, it will fail:
+
+    >>> result = cc.credit(trans_id=auth_trans_id,
+    ...                    card_num='4007000000027',
+    ...                    exp_date='0530',
+    ...                    amount='1.00',
+    ...                    )
+    >>> result.response_reason
+    'The referenced transaction does not meet the criteria for issuing a credit.'
+    >>> result.response
+    'error'
+
+
 Voiding Transactions
 --------------------
 
 If we need to stop a transaction that has not yet been completed (like the
-capturing of the authorized transaction above) we can do so with the ``void``
+crediting of the captured transaction above) we can do so with the ``void``
 method.
 
-    >>> result = cc.void(trans_id=result.trans_id)
+    >>> result = cc.void(trans_id=auth_trans_id)
     >>> result.response
     'approved'
 
 The server shows that the transaction was voided:
 
     >>> transactions = server.getTransactions()
-    >>> transactions[result.trans_id]
+    >>> transactions[auth_trans_id]
     'Voided'
 
 
@@ -113,7 +136,7 @@ Transaction Errors
 If something about the transaction is erroneous, the transaction results
 indicate so.
 
-    >>> result = cc.authorize(amount='2.00', card_num='4007000000027',
+    >>> result = cc.authorize(amount='2.50', card_num='4007000000027',
     ...                       exp_date='0599')
 
 The result object reflecs the error.
