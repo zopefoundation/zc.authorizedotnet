@@ -197,6 +197,23 @@ the duplicate window.
     'approved'
 
 
+Line items
+----------
+
+An itemized listing of the order can be included in the authorization
+data as a sequcence of sequences.
+
+    >>> result = cc.authorize(amount='2.98', card_num='4007000000027',
+    ...                       exp_date='0530',
+    ...                       line_items=[
+    ...                       # id  name      description qty  unit price tax
+    ...                       ('1', 'G-1000', 'Gadget',   '1', '1.99',    'Y'),
+    ...                       ('2', 'A-150',  'Accessory','1', '0.99',    'Y'),
+    ...                       ])
+    >>> result.response
+    'approved'
+
+
 The MD5 Hash Security Feature
 -----------------------------
 
@@ -238,10 +255,6 @@ floating point representation issues.
         ...
     ValueError: amount must be a string
 
-TODO
-----
-
- - explain and demonstrate duplicate transaction window
 
 NOTES
 -----

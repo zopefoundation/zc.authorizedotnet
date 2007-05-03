@@ -143,9 +143,7 @@ class AuthorizeNetConnection(object):
             # ... turn on test mode (that's the only time that card works)
             kws['test_request'] = 'TRUE'
 
-        fields = dict(('x_'+key, value) for key, value in kws.iteritems())
-        fields.update(self.standard_fields)
-        body = urllib.urlencode(fields)
+        body = self.formatRequest(kws)
 
         if self.server.startswith('localhost:'):
             server, port = self.server.split(':')
@@ -168,6 +166,58 @@ class AuthorizeNetConnection(object):
                              % result.trans_id)
 
         return result
+
+    def formatRequest(self, params):
+        r"""Encode the argument dict into HTTP request form data.
+
+            >>> conn = AuthorizeNetConnection('test.authorize.net',
+            ...                               'login','key')
+            >>> def display(result):
+            ...     print '&\\\n'.join(result.split('&'))
+            >>> display(conn.formatRequest({'card_num': '4007000000027',
+            ...                             'exp_date': '0530'}))
+            x_login=login&\
+            x_method=CC&\
+            x_card_num=4007000000027&\
+            x_tran_key=key&\
+            x_version=3.1&\
+            x_delim_char=%7C&\
+            x_exp_date=0530&\
+            x_relay_response=FALSE&\
+            x_delim_data=TRUE
+
+        The 'line_items' parameter is handled in a special way.  It is
+        expected to be a sequence of sequences.  Each inner sequence
+        represents a line_item parameter.  There can be up to 30 of
+        them in a single transaction.
+
+            >>> display(conn.formatRequest({'line_items': [
+            ...  # item# name       description    qty unitprice taxable
+            ...    ('1', 'MD-1000', 'Main device', '1', '99.95', 'Y'),
+            ...    ('2', 'AC-100', 'Accessory', '2', '14.95', ''),
+            ...    ]}))
+            x_login=login&\
+            x_version=3.1&\
+            x_delim_char=%7C&\
+            x_method=CC&\
+            x_relay_response=FALSE&\
+            x_tran_key=key&\
+            x_delim_data=TRUE&\
+            x_line_item=1%3C%7C%3EMD-1000%3C%7C%3EMain+device%3C%7C%3E1%3C%7C%3E99.95%3C%7C%3EY&\
+            x_line_item=2%3C%7C%3EAC-100%3C%7C%3EAccessory%3C%7C%3E2%3C%7C%3E14.95%3C%7C%3E
+
+        '%3C%7C%3E' is '<|>', the delimiter of line_item fields.
+        """
+
+        line_items = []
+        if 'line_items' in params:
+            line_items = params.pop('line_items')
+        fields = dict(('x_'+key, value) for key, value in params.iteritems())
+        fields.update(self.standard_fields)
+        fields_pairs = fields.items()
+        for item in line_items:
+            fields_pairs.append(('x_line_item', '<|>'.join(item)))
+        return urllib.urlencode(fields_pairs)
 
 
 class CcProcessor(object):
