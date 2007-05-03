@@ -153,18 +153,26 @@ rejected.
 The first transaction will work.
 
     >>> result = cc.authorize(amount='3.00', card_num='4007000000027',
-    ...                       exp_date='0530')
+    ...                       exp_date='0530', invoice_num='123')
     >>> result.response
     'approved'
 
 A duplicate transaction will fail with an appropriate message.
 
     >>> result2 = cc.authorize(amount='3.00', card_num='4007000000027',
-    ...                       exp_date='0530')
+    ...                       exp_date='0530', invoice_num='123')
     >>> result2.response
     'error'
     >>> result2.response_reason
     'A duplicate transaction has been submitted.'
+
+Similar transactions can be unaliased by including a unique invoice_num
+field:
+
+    >>> result3 = cc.authorize(amount='3.00', card_num='4007000000027',
+    ...                        exp_date='0530', invoice_num='124')
+    >>> result3.response
+    'approved'
 
 The default window size is 120 seconds, but any other value (including 0) can
 be provided by passing ``duplicate_window`` to the transaction method.

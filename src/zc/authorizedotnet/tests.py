@@ -131,15 +131,17 @@ class TestRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                            ' address provided does not match billing address'
                            ' of cardholder.')
 
-        if (amount, card_num) in in_process_server.seen_auths:
+        invoice_num = fields.getvalue('x_invoice_num')
+        txn_hash = (amount, card_num, invoice_num)
+        if txn_hash in in_process_server.seen_auths:
             response_code = '3'
             reason_text = 'A duplicate transaction has been submitted.'
 
         out = self.makeOut(response_code, reason_text, approval_code,
                            trans_id, amount)
 
-        if (amount, card_num) not in in_process_server.seen_auths:
-            in_process_server.seen_auths.append( (amount, card_num) )
+        if txn_hash not in in_process_server.seen_auths:
+            in_process_server.seen_auths.append(txn_hash)
             in_process_server.info[trans_id] = 'Authorized/Pending Capture'
 
         return out
