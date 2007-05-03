@@ -58,12 +58,6 @@ The result object contains details about the transaction.
     >>> result.trans_id
     '123456789'
 
-The server successfully processed the transaction:
-
-    >>> transactions = server.getTransactions()
-    >>> transactions[result.trans_id]
-    'Authorized/Pending Capture'
-
 
 Capturing Authorized Transactions
 ---------------------------------
@@ -74,13 +68,6 @@ can do so.
     >>> result = cc.captureAuthorized(trans_id=result.trans_id)
     >>> result.response
     'approved'
-
-The server shows that the transaction has been captured and is awaiting
-settlement:
-
-    >>> transactions = server.getTransactions()
-    >>> transactions[result.trans_id]
-    'Captured/Pending Settlement'
 
 
 Credit (refund) transactions
@@ -115,12 +102,6 @@ method.
     >>> result = cc.void(trans_id=auth_trans_id)
     >>> result.response
     'approved'
-
-The server shows that the transaction was voided:
-
-    >>> transactions = server.getTransactions()
-    >>> transactions[auth_trans_id]
-    'Voided'
 
 
 Transaction Errors

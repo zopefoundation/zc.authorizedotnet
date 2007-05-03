@@ -58,38 +58,6 @@ def makeMechBrowser():
 
     return mech_browser
 
-class ScrapedMerchantUiServer(object):
-    initialized = False
-
-    def __init__(self, server, login, password):
-        mech_browser = makeMechBrowser()
-        login_page = 'https://%s/ui/themes/anet/merch.app' % server
-        self.browser = Browser(mech_browser=mech_browser)
-        self.browser.open(login_page)
-        self.browser.getControl(name='MerchantLogin').value = login
-        self.browser.getControl(name='Password').value = password
-        self.browser.getControl('Log In').click()
-
-        # We have to skip a stupid nag screen.
-        self.browser.getControl('Skip').click()
-
-    def getTransactions(self):
-        self.browser.getLink('Unsettled Transactions').click()
-        soup = BeautifulSoup(self.browser.contents)
-        transactions = {}
-        for row in soup('tr', ['SearchLineItemRow1', 'SearchLineItemRow2']):
-            cells = row('td')
-            if len(cells) == 8:
-                txn_id = cells[0].contents[0].contents[0]
-                txn_status = cells[2].contents[0]
-                transactions[txn_id] = txn_status
-        self.browser.goBack()
-
-        return transactions
-
-    def close(self):
-        self.browser.mech_browser.close()
-
 
 class InProcessServer(object):
     info = {}
@@ -269,15 +237,9 @@ def remoteSetUp(test):
                            ' provided in order to run the zc.authorizedotnet'
                            ' tests against the Authorize.Net test server.')
 
-    test.globs['server'] = ScrapedMerchantUiServer('test.authorize.net', login,
-                                                   password)
     test.globs['LOGIN'] = login
     test.globs['KEY'] = key
 
-
-
-def remoteTearDown(test):
-    test.globs['server'].close()
 
 def test_suite():
     checker = renormalizing.RENormalizing([
@@ -293,13 +255,11 @@ def test_suite():
             optionflags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
             checker = checker,
             setUp = remoteSetUp,
-            tearDown = remoteTearDown,
             )
     remote.level = 5
     local = doctest.DocFileSuite(
             'README.txt',
             globs = dict(
-                server=in_process_server,
                 SERVER_NAME='localhost:%s' % TEST_SERVER_PORT,
                 ),
             optionflags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
