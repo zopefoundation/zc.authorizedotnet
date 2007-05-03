@@ -25,13 +25,6 @@ interface, but this module attempts to work independently of most of them.
 Where specific settings are required they will be marked with the phrase
 "required merchant interface setting".
 
-Warning
--------
-
-This package has NOT been tested in production.  It is made available as a
-foundation for future work.  We consider it "alpha" quality.
-
-
 Transaction Keys
 ----------------
 
