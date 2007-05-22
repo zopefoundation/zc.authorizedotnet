@@ -58,6 +58,18 @@ The result object contains details about the transaction.
     >>> result.trans_id
     '123456789'
 
+When the card_num is sent in, the result also contains the type of credit card:
+
+    >>> result.card_type
+    'Visa'
+
+If no credit card number is provided, it won't add the card_type field:
+
+    >>> result2 = cc.authorize(amount='2.00', exp_date='0530')
+    >>> getattr(result2, 'card_type', None) == None
+    True
+   
+
 
 Capturing Authorized Transactions
 ---------------------------------
@@ -212,6 +224,12 @@ data as a sequcence of sequences.
     ...                       ])
     >>> result.response
     'approved'
+
+If the card_num is sent in the input, then the result will have a card_type 
+attribute as well: 
+
+    >>> result.card_type
+    'Visa'
 
 
 The MD5 Hash Security Feature

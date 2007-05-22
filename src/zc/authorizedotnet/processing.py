@@ -114,6 +114,7 @@ class TransactionResult(object):
         self.trans_id = fields[6]
         self.amount = fields[9]
         self.hash = fields[37]
+        self.card_type = None
 
     def validateHash(self, login, salt):
         value = ''.join([salt, login, self.trans_id, self.amount])
@@ -159,7 +160,13 @@ class AuthorizeNetConnection(object):
         response = conn.getresponse()
         fields = response.read().split(self.delimiter)
         result = TransactionResult(fields)
-
+        
+        # get the card_type
+        card_num = kws.get('card_num')
+        if card_num:
+            card_type = self.identifyCardType(card_num)
+            result.card_type = card_type
+        
         if (self.salt is not None
         and not result.validateHash(self.login, self.salt)):
             raise ValueError('MD5 hash is not valid (trans_id = %r)'
@@ -220,6 +227,72 @@ class AuthorizeNetConnection(object):
         return urllib.urlencode(fields_pairs)
 
 
+    def identifyCardType(self, card_num):
+        """ Identifies the Credit Card type based on information on the
+        following site(s):
+
+        http://en.wikipedia.org/wiki/Credit_card_number
+        http://www.beachnet.com/~hstiles/cardtype.html
+
+        This checks for the prefix and the length of the card number to
+        identify the type of the card. This method is used because Authorize.net
+        does not provide this information. This method currently identifies only
+        the following four types:
+
+        1. VISA
+        2. MASTERCARD
+        3. Discover
+        4. AMEX
+
+            >>> conn = AuthorizeNetConnection('test.authorize.net',
+            ...                               'login','key')
+            >>> conn.identifyCardType('370000000000002')
+            'AMEX'
+            
+            >>> conn.identifyCardType('6011000000000012')
+            'Discover'
+        
+            >>> conn.identifyCardType('5424000000000015')
+            'MasterCard'
+        
+            >>> conn.identifyCardType('4007000000027')
+            'Visa'
+
+            >>> conn.identifyCardType('400700000002')
+            'Unknown'
+
+        """
+        card_type = 'Unknown'
+        card_len = len(card_num)
+        card_1_digit = card_num[0]
+        card_2_digits = card_num[:2]
+        card_4_digits = card_num[:4]
+        
+        # AMEX
+        if (card_len == 15) and card_2_digits in ('34', '37'):
+            card_type = 'AMEX'
+
+        # MASTERCARD, DISCOVER & VISA
+        elif card_len == 16:
+            # MASTERCARD
+            if card_2_digits in ('51', '52', '53', '54', '55'):
+                card_type = 'MasterCard'
+
+            # DISCOVER
+            elif (card_4_digits == '6011') or (card_2_digits == '65'):
+                card_type = 'Discover'
+
+            # VISA
+            elif (card_1_digit == '4'):
+                card_type = 'Visa'
+
+        # VISA
+        elif (card_len == 13) and (card_1_digit == '4'):
+            card_type = 'Visa'
+
+        return card_type
+
+            
 class CcProcessor(object):
     def __init__(self, server, login, key, salt=None, timeout=None):
         self.connection = AuthorizeNetConnection(
