@@ -34,6 +34,8 @@ importing the CcProcessor class you must pass it your login and transaction
 key:
 
     >>> from zc.authorizedotnet.processing import CcProcessor
+    >>> from zc.authorizedotnet.processing import (AMEX, DISCOVER, MASTERCARD,
+    ...                                            VISA, UNKNOWN_CARD_TYPE)
     >>> cc = CcProcessor(server=SERVER_NAME, login=LOGIN, key=KEY)
 
 
@@ -60,13 +62,13 @@ The result object contains details about the transaction.
 
 When the card_num is sent in, the result also contains the type of credit card:
 
-    >>> result.card_type
-    'Visa'
+    >>> result.card_type == VISA
+    True
 
-If no credit card number is provided, it won't add the card_type field:
+If no credit card number is provided, card_type is None:
 
     >>> result2 = cc.authorize(amount='2.00', exp_date='0530')
-    >>> getattr(result2, 'card_type', None) == None
+    >>> result2.card_type == None
     True
    
 
@@ -225,11 +227,10 @@ data as a sequcence of sequences.
     >>> result.response
     'approved'
 
-If the card_num is sent in the input, then the result will have a card_type 
-attribute as well: 
+the result will have a card_type attribute.
 
-    >>> result.card_type
-    'Visa'
+    >>> result.card_type == VISA
+    True
 
 
 The MD5 Hash Security Feature
