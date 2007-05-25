@@ -16,15 +16,13 @@ from M2Crypto import httpslib, SSL
 import urllib
 import md5
 
-from zc.authorizedotnet.i18n import _
-
 # CONSTANTS for the supported Card Types
 
-AMEX = _('AMEX')
-DISCOVER = _('Discover')
-MASTERCARD = _('MasterCard')
-VISA = _('Visa')
-UNKNOWN_CARD_TYPE = _('Unknown')
+AMEX = 'AMEX'
+DISCOVER = 'Discover'
+MASTERCARD = 'MasterCard'
+VISA = 'Visa'
+UNKNOWN_CARD_TYPE = 'Unknown'
 
 
 def identifyCreditCardType(card_num, card_len):
