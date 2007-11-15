@@ -12,7 +12,6 @@
 #
 ##############################################################################
 
-from BeautifulSoup import BeautifulSoup
 from zope.testbrowser.browser import Browser
 from zope.testing import doctest, renormalizing
 import BaseHTTPServer

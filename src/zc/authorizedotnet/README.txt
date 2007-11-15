@@ -34,8 +34,8 @@ importing the CcProcessor class you must pass it your login and transaction
 key:
 
     >>> from zc.authorizedotnet.processing import CcProcessor
-    >>> from zc.authorizedotnet.processing import (AMEX, DISCOVER, MASTERCARD,
-    ...                                            VISA, UNKNOWN_CARD_TYPE)
+    >>> from zc.creditcard import (AMEX, DISCOVER, MASTERCARD,
+    ...                            VISA, UNKNOWN_CARD_TYPE)
     >>> cc = CcProcessor(server=SERVER_NAME, login=LOGIN, key=KEY)
 
 
@@ -273,10 +273,3 @@ floating point representation issues.
     Traceback (most recent call last):
         ...
     ValueError: amount must be a string
-
-
-NOTES
------
-
-M2Crypto 0.16 appears to have issues on some platforms such as Centos.
-Reverting to version 0.15 has alleviated them in some cases.

@@ -19,9 +19,9 @@ setup(
     packages = ['zc', 'zc.authorizedotnet'],
     package_dir = {'': 'src'},
     namespace_packages = ['zc'],
-    install_requires = ['M2Crypto', 'setuptools'],
+    install_requires = ['zc.ssl', 'zc.creditcard'],
     include_package_data = True,
-    tests_require = ['zope.testing', 'zope.testbrowser', 'BeautifulSoup'],
+    tests_require = ['zope.testing', 'zope.testbrowser'],
     test_suite = name+'.tests.test_suite',
     classifiers = [
        'Intended Audience :: Developers',

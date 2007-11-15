@@ -12,169 +12,11 @@
 #
 ##############################################################################
 
-from M2Crypto import httpslib, SSL
+import httplib
 import urllib
 import md5
-
-# CONSTANTS for the supported Card Types
-
-AMEX = 'AMEX'
-DISCOVER = 'Discover'
-MASTERCARD = 'MasterCard'
-VISA = 'Visa'
-UNKNOWN_CARD_TYPE = 'Unknown'
-
-
-def identifyCreditCardType(card_num, card_len):
-    """ Identifies the Credit Card type based on information on the
-    following site(s):
-
-    http://en.wikipedia.org/wiki/Credit_card_number
-    http://www.beachnet.com/~hstiles/cardtype.html
-
-    This checks the prefix (first 4 digits) and the length of the card number to
-    identify the type of the card. This method is used because Authorize.net
-    does not provide this information. This method currently identifies only
-    the following four types:
-
-    1. VISA
-    2. MASTERCARD
-    3. Discover
-    4. AMEX
-
-    Before we test, lets create a few dummy credit-card numbers:
-    
-        >>> amex_card_num = '370000000000002'
-        >>> disc_card_num = '6011000000000012'
-        >>> mc_card_num = '5424000000000015'
-        >>> visa_card_num = '4007000000027'
-        >>> unknown_card_num = '400700000002'
-    
-        >>> identifyCreditCardType(amex_card_num, len(amex_card_num)) == AMEX
-        True
-
-        >>> identifyCreditCardType(disc_card_num, len(disc_card_num)) == DISCOVER
-        True
-
-        >>> identifyCreditCardType(mc_card_num, len(mc_card_num)) == MASTERCARD
-        True
-
-        >>> identifyCreditCardType(visa_card_num, len(visa_card_num)) == VISA
-        True
-
-        >>> identifyCreditCardType(unknown_card_num, len(unknown_card_num)) == UNKNOWN_CARD_TYPE
-        True
-
-    """
-    card_type = UNKNOWN_CARD_TYPE
-    card_1_digit = card_num[0]
-    card_2_digits = card_num[:2]
-    card_4_digits = card_num[:4]
-
-    # AMEX
-    if (card_len == 15) and card_2_digits in ('34', '37'):
-        card_type = AMEX
-
-    # MASTERCARD, DISCOVER & VISA
-    elif card_len == 16:
-        # MASTERCARD
-        if card_2_digits in ('51', '52', '53', '54', '55'):
-            card_type = MASTERCARD
-
-        # DISCOVER
-        elif (card_4_digits == '6011') or (card_2_digits == '65'):
-            card_type = DISCOVER
-
-        # VISA
-        elif (card_1_digit == '4'):
-            card_type = VISA
-
-    # VISA
-    elif (card_len == 13) and (card_1_digit == '4'):
-        card_type = VISA
-
-    return card_type
-    
-
-class HTTPSConnection(httpslib.HTTPSConnection):
-    """HTTPS connection with a timeout
-
-    We'll need a connection stub:
-
-        >>> class StubConnection(object):
-        ...     def set_socket_read_timeout(self, tm):
-        ...          print 'Read timeout set to %d seconds, %d microseconds' % (tm.sec, tm.microsec)
-        ...     def set_socket_write_timeout(self, tm):
-        ...          print 'Write timeout set to %d seconds, %d microseconds' % (tm.sec, tm.microsec)
-        ...     def connect(self, address):
-        ...          print 'Connecting to %s' % (address, )
-
-    Now, let's create a HTTPS connection with this stub SSL connection:
-
-        >>> conn = HTTPSConnection('localhost')
-        >>> conn._createConnection = lambda: StubConnection()
-
-        >>> conn.connect()
-        Connecting to ('localhost', 443)
-
-    If the timeout keyword attribute is provided, it is passed to the
-    SSL connection:
-
-        >>> conn = HTTPSConnection('localhost', timeout=4.5)
-        >>> conn._createConnection = lambda: StubConnection()
-
-        >>> conn.connect()
-        Read timeout set to 4 seconds, 500000000 microseconds
-        Write timeout set to 4 seconds, 500000000 microseconds
-        Connecting to ('localhost', 443)
-
-    """
-    # why do we use the HTTPS connection in the MCrypto2 httpslib module
-    # rather than the one in the standard library's httplib module?  Answer
-    # (gathered from Benji): the version in MCrypto2 verifies certificates,
-    # while the one in the standard library does not.
-
-    def __init__(self, host, port=None, strict=None, timeout=None):
-        # timeout is None or float
-        self.timeout = timeout
-        httpslib.HTTPSConnection.__init__(self, host, port, strict)
-
-    def _createConnection(self):
-        return SSL.Connection(self.ssl_ctx)
-
-    def _getTimeout(self, timeout):
-        """Create an SSL.timeout object out of a float of seconds
-
-            >>> conn = HTTPSConnection('localhost')
-            >>> tm = conn._getTimeout(1.85)
-            >>> tm
-            <M2Crypto.SSL.timeout.timeout instance at ...>
-            >>> tm.sec
-            1
-            >>> tm.microsec
-            850000000
-
-            >>> tm = conn._getTimeout(2.1)
-            >>> tm.sec
-            2
-            >>> tm.microsec
-            100000000
-
-        """
-        seconds = int(timeout)
-        useconds = int((timeout - seconds) * 10 ** 9)
-        return SSL.timeout(seconds, useconds)
-
-    def connect(self):
-        self.sock = self._createConnection()
-
-        if self.timeout:
-            timeout = self._getTimeout(self.timeout)
-            self.sock.set_socket_read_timeout(timeout)
-            self.sock.set_socket_write_timeout(timeout)
-            self.sock.blocking = True
-
-        self.sock.connect((self.host, self.port))
+import zc.creditcard
+import zc.ssl
 
 
 class TransactionResult(object):
@@ -228,9 +70,9 @@ class AuthorizeNetConnection(object):
 
         if self.server.startswith('localhost:'):
             server, port = self.server.split(':')
-            conn = httpslib.HTTPConnection(server, port)
+            conn = httplib.HTTPConnection(server, port)
         else:
-            conn = HTTPSConnection(self.server, timeout=self.timeout)
+            conn = zc.ssl.HTTPSConnection(self.server, timeout=self.timeout)
         conn.putrequest('POST', '/gateway/transact.dll')
         conn.putheader('content-type', 'application/x-www-form-urlencoded')
         conn.putheader('content-length', len(body))
@@ -315,8 +157,8 @@ class CcProcessor(object):
         result = self.connection.sendTransaction(type=type, **kws)
         # get the card_type
         card_num = kws.get('card_num')
-        if card_num:
-            card_type = identifyCreditCardType(card_num[:4], len(card_num))
+        if card_num is not None:
+            card_type = zc.creditcard.identifyCreditCardType(card_num[:4], len(card_num))
             result.card_type = card_type
         
         return result
