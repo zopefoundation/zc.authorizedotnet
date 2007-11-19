@@ -7,7 +7,7 @@ def read(*rnames):
 name = "zc.authorizedotnet"
 setup(
     name = name,
-    version = "1.1dev",
+    version = "1.3",
     author = "Zope Corporation",
     author_email = "zope3-dev@zope.org",
     description = "A simple interface to Authorize.Net's AIM API",
@@ -19,7 +19,7 @@ setup(
     packages = ['zc', 'zc.authorizedotnet'],
     package_dir = {'': 'src'},
     namespace_packages = ['zc'],
-    install_requires = ['zc.ssl', 'zc.creditcard'],
+    install_requires = ['setuptools', 'zc.ssl', 'zc.creditcard'],
     include_package_data = True,
     tests_require = ['zope.testing', 'zope.testbrowser'],
     test_suite = name+'.tests.test_suite',
