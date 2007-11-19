@@ -157,7 +157,7 @@ class CcProcessor(object):
         result = self.connection.sendTransaction(type=type, **kws)
         # get the card_type
         card_num = kws.get('card_num')
-        if card_num is not None:
+        if card_num is not None and len(card_num) >= 4:
             card_type = zc.creditcard.identifyCreditCardType(card_num[:4], len(card_num))
             result.card_type = card_type
         

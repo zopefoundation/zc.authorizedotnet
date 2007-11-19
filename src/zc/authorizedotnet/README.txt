@@ -70,7 +70,11 @@ If no credit card number is provided, card_type is None:
     >>> result2 = cc.authorize(amount='2.00', exp_date='0530')
     >>> result2.card_type == None
     True
-   
+
+    >>> result2 = cc.authorize(amount='2.00', card_num='', exp_date='0530')
+    >>> result2.card_type == None
+    True
+
 
 
 Capturing Authorized Transactions
