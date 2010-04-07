@@ -7,7 +7,7 @@ def read(*rnames):
 name = "zc.authorizedotnet"
 setup(
     name = name,
-    version = "1.3.1",
+    version = "1.3.2dev",
     author = "Zope Corporation",
     author_email = "zope-dev@zope.org",
     description = "A simple interface to Authorize.Net's AIM API",
