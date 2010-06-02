@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2004 Zope Corporation and Contributors.
+# Copyright (c) 2004 Zope Foundation and Contributors.
 # Copyright (c) 2010 Zope Foundation and Contributors.
 # All Rights Reserved.
 #
