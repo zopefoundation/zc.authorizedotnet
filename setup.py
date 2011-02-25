@@ -21,7 +21,7 @@ setup(
     namespace_packages = ['zc'],
     install_requires = ['setuptools', 'zc.ssl', 'zc.creditcard'],
     include_package_data = True,
-    tests_require = ['zope.testing', 'zope.testbrowser'],
+    tests_require = ['zope.testing', 'zope.testbrowser >= 3.9'],
     test_suite = name+'.tests.test_suite',
     classifiers = [
        'Intended Audience :: Developers',

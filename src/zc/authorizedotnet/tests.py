@@ -16,10 +16,10 @@
 from zope.testbrowser.browser import Browser
 from zope.testing import doctest, renormalizing
 import BaseHTTPServer
-import ClientForm
 import SimpleHTTPServer
 import cgi
 import httplib
+import mechanize
 import mechanize
 import os
 import re
@@ -28,13 +28,13 @@ import unittest
 
 TEST_SERVER_PORT = 30423
 
-class TolerantFormParser(ClientForm.FormParser):
+class TolerantFormParser(mechanize.FormParser):
     """A parser that ignores <input> elements outside of forms."""
 
     def do_input(self, attrs):
         if self._current_form is None:
             return
-        return ClientForm.FormParser.do_input(self, attrs)
+        return mechanize.FormParser.do_input(self, attrs)
 
 
 def makeMechBrowser():
@@ -272,6 +272,3 @@ def test_suite():
     unit = doctest.DocTestSuite('zc.authorizedotnet.processing',
                                 optionflags=doctest.ELLIPSIS)
     return unittest.TestSuite((local, remote, unit))
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
